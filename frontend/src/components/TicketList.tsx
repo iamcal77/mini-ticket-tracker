@@ -1,10 +1,20 @@
 import { useQuery } from "@tanstack/react-query";
+
+import type { Ticket } from "../types/tickets";
+import TicketCard from "./TicketCard";
 import { getTickets } from "../services/ticketSevice";
 
+interface TicketListProps {
+  filter: string;
+  onEdit: (ticket: Ticket) => void;
+  onDelete: (id: number) => void;
+}
 
-
-
-export default function TicketList() {
+export default function TicketList({
+  filter,
+  onEdit,
+  onDelete,
+}: TicketListProps) {
   const {
     data: tickets,
     isLoading,
@@ -14,69 +24,58 @@ export default function TicketList() {
     queryFn: getTickets,
   });
 
-
   if (isLoading) {
     return (
-      <p className="text-gray-500">
-        Loading tickets...
-      </p>
+      <div className="flex justify-center py-16">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-black" />
+      </div>
     );
   }
-
 
   if (isError) {
     return (
-      <p className="text-red-500">
-        Failed to load tickets.
-      </p>
-    );
-  }
+      <div className="rounded-xl border border-red-200 bg-red-50 p-6 text-center">
+        <p className="font-medium text-red-700">
+          Failed to load tickets.
+        </p>
 
-
-  if (!tickets?.length) {
-    return (
-      <div className="rounded-lg border bg-white p-8 text-center">
-        <p className="text-gray-500">
-          No tickets found.
+        <p className="mt-1 text-sm text-red-600">
+          Make sure the FastAPI server is running.
         </p>
       </div>
     );
   }
 
+  const filteredTickets =
+    filter === "ALL"
+      ? tickets
+      : tickets?.filter(
+          (ticket) => ticket.status === filter
+        );
+
+  if (!filteredTickets?.length) {
+    return (
+      <div className="rounded-xl border border-dashed border-gray-300 bg-white p-12 text-center">
+        <h3 className="font-semibold text-gray-900">
+          No tickets found
+        </h3>
+
+        <p className="mt-1 text-sm text-gray-500">
+          There are no tickets matching this filter.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
-      {tickets.map((ticket) => (
-        <div
+      {filteredTickets.map((ticket) => (
+        <TicketCard
           key={ticket.id}
-          className="rounded-lg border bg-white p-5 shadow-sm"
-        >
-          <div className="flex items-start justify-between">
-            <div>
-              <h2 className="text-lg font-semibold">
-                {ticket.title}
-              </h2>
-
-              <p className="mt-2 text-sm text-gray-600">
-                {ticket.description}
-              </p>
-            </div>
-
-            <span className="rounded-full bg-gray-100 px-3 py-1 text-xs font-medium">
-              {ticket.status}
-            </span>
-          </div>
-
-          <div className="mt-4">
-            <span className="text-sm text-gray-500">
-              Priority:
-            </span>
-
-            <span className="ml-2 text-sm font-medium">
-              {ticket.priority}
-            </span>
-          </div>
-        </div>
+          ticket={ticket}
+          onEdit={onEdit}
+          onDelete={onDelete}
+        />
       ))}
     </div>
   );
